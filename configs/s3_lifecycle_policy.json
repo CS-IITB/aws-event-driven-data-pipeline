@@ -1,0 +1,31 @@
+{
+  "Rules": [
+    {
+      "ID": "RawDataTieringPolicy",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "raw/"
+      },
+      "Transitions": [
+        {
+          "Days": 30,
+          "StorageClass": "STANDARD_IA"
+        },
+        {
+          "Days": 90,
+          "StorageClass": "GLACIER"
+        }
+      ]
+    },
+    {
+      "ID": "RejectedQuarantineAutoCleanup",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "rejected/"
+      },
+      "Expiration": {
+        "Days": 15
+      }
+    }
+  ]
+}

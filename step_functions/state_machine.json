@@ -1,0 +1,80 @@
+{
+  "Comment": "NYCTLC Transform Pipeline - Triggered by ingestion.done marker",
+  "StartAt": "RawToCurated",
+  "States": {
+    "RawToCurated": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "nyctlc-raw-to-curated-etl",
+        "Arguments": {
+          "--bucket_name.$": "$.bucket"
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure-RawToCurated"
+        }
+      ],
+      "Next": "CuratedToAggregated"
+    },
+    "CuratedToAggregated": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "nyctlc-curated-to-aggregated-etl",
+        "Arguments": {
+          "--bucket_name.$": "$.bucket"
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure-CuratedToAggregated"
+        }
+      ],
+      "Next": "NotifyAnalysts"
+    },
+    "NotifyAnalysts": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:nyctlc-pipeline-alerts",
+        "Subject": "Lyft Mobility Pipeline Complete - Data Available",
+        "Message": "The NYCTLC transformation pipeline has finished successfully. Curated and aggregated tables are ready in Amazon Athena."
+      },
+      "Next": "PipelineSucceeded"
+    },
+    "NotifyFailure-RawToCurated": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:nyctlc-pipeline-alerts",
+        "Subject": "Pipeline FAILED: Raw to Curated",
+        "Message.$": "States.Format('Raw to Curated ETL job failed. Error: {}. Cause: {}', $.error.Error, $.error.Cause)"
+      },
+      "Next": "PipelineFailed"
+    },
+    "NotifyFailure-CuratedToAggregated": {
+      "Type": "Task",
+      "Resource": "arn:aws:sns:us-east-1:123456789012:nyctlc-pipeline-alerts",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:nyctlc-pipeline-alerts",
+        "Subject": "Pipeline FAILED: Curated to Aggregated",
+        "Message.$": "States.Format('Curated to Aggregated ETL job failed. Error: {}. Cause: {}', $.error.Error, $.error.Cause)"
+      },
+      "Next": "PipelineFailed"
+    },
+    "PipelineSucceeded": {
+      "Type": "Succeed"
+    },
+    "PipelineFailed": {
+      "Type": "Fail",
+      "Error": "TransformPipelineFailed",
+      "Cause": "One or more transform jobs failed. Check CloudWatch logs."
+    }
+  }
+}
