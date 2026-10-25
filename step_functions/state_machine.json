@@ -60,7 +60,7 @@
     },
     "NotifyFailure-CuratedToAggregated": {
       "Type": "Task",
-      "Resource": "arn:aws:sns:us-east-1:123456789012:nyctlc-pipeline-alerts",
+      "Resource": "arn:aws:states:::sns:publish",
       "Parameters": {
         "TopicArn": "arn:aws:sns:us-east-1:123456789012:nyctlc-pipeline-alerts",
         "Subject": "Pipeline FAILED: Curated to Aggregated",

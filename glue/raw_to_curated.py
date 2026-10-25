@@ -127,9 +127,7 @@ try:
         col("service_zone").alias("dropoff_service_zone")
     )
 
-    curated_df = enriched_df \
-        .join(broadcast(pickup_zone), on="PULocationID", how="left") \
-        .join(broadcast(dropoff_zone), on="DOLocationID", how="left")
+    curated_df = enriched_df         .join(broadcast(pickup_zone), on="PULocationID", how="left")         .join(broadcast(dropoff_zone), on="DOLocationID", how="left")
 
     print("Step 5: Writing clean Snappy Parquet partitioned by pickup_date...")
     output_path = f"s3://{BUCKET}/curated/nyctlc/fhvhv_trips_curated/"
